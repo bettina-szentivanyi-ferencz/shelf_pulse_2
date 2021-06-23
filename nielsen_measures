@@ -1,0 +1,44 @@
+SELECT
+		burst_cycle_lenght.cycle_name AS cycle_name,
+		product_fk,
+		category_name,
+		product_uid,
+		region_fk,
+		region_name,
+		retailer_fk,
+		retailer_name,
+		store_type_fk,
+		store_type_name,
+		channel,
+		trade_market,
+		COALESCE (rt.retailer_name,'') || COALESCE (st.store_type_name,'') || COALESCE (rg.region_name,'') || COALESCE (channel,'') || COALESCE (trade_market,'') AS ret_uid,
+		COALESCE (category_name,'') || '_' || COALESCE (burst_cycle_lenght.cycle_name,'') AS data_segregation,
+		sub_category_name,
+		CAST(plan_fk AS string) AS category_burst_fk,
+		burst_cycle_lenght.plan_lenght,
+		SUM(sales) AS sales,
+		SUM(units) AS units,
+		safe_divide (sum(sales), sum(units)) as sales_per_units
+	FROM `trax-cpg-dwh-int.external.rinielsen2_burst_category_sales_fact` rinielsen2_burst_category_sales_fact
+	LEFT JOIN (SELECT distinct project_name, region_id, region_name FROM `trax-cpg-dwh-int.prod.store_dim` store_dim where project_name='rinielsen2') rg ON rinielsen2_burst_category_sales_fact.region_fk = rg.region_id
+	LEFT JOIN (SELECT distinct retailer_id, retailer_name FROM `trax-cpg-dwh-int.prod.store_dim` store_dim where project_name='rinielsen2') rt ON rinielsen2_burst_category_sales_fact.retailer_fk = rt.retailer_id
+	LEFT JOIN (SELECT distinct store_type_id, store_type_name FROM `trax-cpg-dwh-int.prod.store_dim` store_dim where project_name='rinielsen2') st ON rinielsen2_burst_category_sales_fact.store_type_fk = st.store_type_id
+	LEFT JOIN `trax-cpg-dwh-int.prod.product_dim` product_dim ON rinielsen2_burst_category_sales_fact.product_fk = product_dim.product_id and product_dim.project_name='rinielsen2'
+	LEFT JOIN (
+select
+	*,
+	case when timestamp_diff(end_date,start_date,day) between 22 and 34 then 1
+		when timestamp_diff(end_date,start_date,day) between 85 and 97 then 2 else 0 end as plan_lenght
+from `trax-cpg-dwh-int.project_tables.rinielsen2_burst_cycles`
+) as burst_cycle_lenght  ON rinielsen2_burst_category_sales_fact.plan_fk = burst_cycle_lenght.pk
+	-- filter out non existent store group combinations (it is a flaw in sales extraction)
+	WHERE EXISTS
+		(SELECT
+			1
+		FROM `trax-cpg-dwh-int.prod.store_dim` store_dim
+		WHERE rinielsen2_burst_category_sales_fact.region_fk = store_dim.region_id
+			AND rinielsen2_burst_category_sales_fact.retailer_fk = store_dim.retailer_id
+			AND rinielsen2_burst_category_sales_fact.store_type_fk = store_dim.store_type_id
+			AND rinielsen2_burst_category_sales_fact.channel = store_dim.store_additional_attribute_6
+			AND rinielsen2_burst_category_sales_fact.trade_market = store_dim.store_additional_attribute_16)
+	GROUP BY category_name, cycle_name, product_fk, product_uid, region_fk, region_name, retailer_fk, retailer_name, store_type_fk, store_type_name, sub_category_name, plan_fk, plan_lenght, channel, trade_market
