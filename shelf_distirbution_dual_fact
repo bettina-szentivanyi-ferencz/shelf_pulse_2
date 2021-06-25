@@ -1,0 +1,12 @@
+
+  
+SELECT sum(SHELF_DISTRIBUTION_PRODUCT_CATEGORY_numerator) FROM `trax-cpg-dwh-int.rinielsen2_shelf_pulse2.shelf_pulse_dualmode_fact_tbl` a
+join `trax-cpg-dwh-int.prod.product_dim` product_dim ON a.product_uuid = product_dim.product_uid and product_dim.project_name='rinielsen2' AND product_dim.is_latest_version = TRUE AND product_dim.product_type IN ('SKU','Other','Empty')
+where a.data_segregation='Ambient Juice_Cycle-4-2021' 
+--and a.region_name='FL' 
+--and product_dim.sub_category_name='Fruit Cups'
+and product_dim.manufacturer_name='COCA-COLA COMPANY' 
+and a.plan_lenght=2
+and a.category_burst_fk='11'
+--and a.retailer_name='Ahold Delhaize'
+and a.shelf_number=1
