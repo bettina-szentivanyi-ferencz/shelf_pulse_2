@@ -1,0 +1,12 @@
+
+SELECT sum(FACINGS_SOS_SKU_OUT_OF_CATEGORY_IN_WHOLE_STORE_numerator), sum(LINEAR_SOS_SKU_OUT_OF_CATEGORY_IN_WHOLE_STORE_numerator) FROM `trax-cpg-dwh-int.rinielsen2_shelf_pulse2.shelf_pulse_dualmode_fact_tbl` a
+join `trax-cpg-dwh-int.prod.product_dim` product_dim ON a.product_uuid = product_dim.product_uid and product_dim.project_name='rinielsen2' AND product_dim.is_latest_version = TRUE AND product_dim.product_type IN ('SKU','Other','Empty')
+where a.data_segregation='Canned Fruit & Pudding_Cycle-4-2021' 
+and a.region_name='FL' 
+--and product_dim.sub_category_name='Fruit Cups'
+--and product_dim.manufacturer_name='DOLE FOOD COMPANY INC' 
+and a.plan_lenght=1
+and a.retailer_name='Dollar General'
+--and a.product_uuid='9ffbae00-0276-11eb-b75b-e5666159924b'
+
+--and a.sales is not null 
